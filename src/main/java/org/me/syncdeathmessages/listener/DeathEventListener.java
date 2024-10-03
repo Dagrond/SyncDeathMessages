@@ -17,8 +17,6 @@ public class DeathEventListener implements Listener {
 
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        if (!event.getEntity().hasMetadata("NPC")) {
-            messageHandler.handleDeathEvent(event);
-        }
+        messageHandler.handleDeathEvent(event);
     }
 }

@@ -9,3 +9,5 @@ commands:
     description: Reloads the plugin
     usage: /<command>
     permission: syncdeathmessages.admin
+libraries:
+  - 'redis.clients:jedis:5.1.4'

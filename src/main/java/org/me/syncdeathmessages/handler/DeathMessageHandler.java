@@ -34,6 +34,7 @@ public class DeathMessageHandler {
 
     public void handleDeathEvent(PlayerDeathEvent event) {
         Player player = event.getEntity();
+        if (player.hasMetadata("NPC")) return; // ignore NPCs
         Player killer = player.getKiller();
 
         plugin.getFoliaLib().getImpl().runAsync((WrappedTask task) -> {
@@ -44,7 +45,7 @@ public class DeathMessageHandler {
             } else {
                 if (event.getEntity().getLastDamageCause() instanceof EntityDamageByEntityEvent) {
                     EntityDamageByEntityEvent damageEvent = (EntityDamageByEntityEvent) event.getEntity().getLastDamageCause();
-                    handleEntityAttack(playerName, damageEvent);
+                    handleEntityAttack(playerName, damageEvent, event);
                 } else {
                     handleOtherDeaths(playerName, event);
                 }
@@ -80,10 +81,13 @@ public class DeathMessageHandler {
         }
     }
 
-    private void handleEntityAttack(String playerName, EntityDamageByEntityEvent damageEvent) {
+    private void handleEntityAttack(String playerName, EntityDamageByEntityEvent damageEvent, PlayerDeathEvent deathEvent) {
         Entity damager = damageEvent.getDamager();
         List<String> messages = plugin.getConfig().getStringList("messages.ENTITY_ATTACK.default");
-
+        if (deathEvent.getDeathMessage() != null && deathEvent.getDeathMessage().contains("§")) {
+            sendJsonMessage(deathEvent.getDeathMessage());
+            return;
+        }
         String message = getRandomMessage(messages).replace("{player}", playerName);
         if (damager.getCustomName() != null) {
             message = message.replace("{mob}", damager.getCustomName());

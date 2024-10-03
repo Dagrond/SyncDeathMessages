@@ -44,10 +44,6 @@
                                     <pattern>com.tcoded</pattern>
                                     <shadedPattern>org.me.syncdeathmessages.shaded.com.tcoded</shadedPattern>
                                 </relocation>
-                                <relocation>
-                                    <pattern>redis.clients</pattern>
-                                    <shadedPattern>org.me.syncdeathmessages.shaded.redis.clients</shadedPattern>
-                                </relocation>
                             </relocations>
                             <filters>
                                 <filter>
@@ -96,8 +92,8 @@
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>5.1.2</version>
-            <scope>compile</scope>
+            <version>5.1.4</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.tcoded</groupId>
