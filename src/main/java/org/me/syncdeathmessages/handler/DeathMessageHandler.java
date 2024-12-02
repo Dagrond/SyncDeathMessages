@@ -43,8 +43,7 @@ public class DeathMessageHandler {
             if (killer != null) {
                 handlePlayerKill(playerName, killer);
             } else {
-                if (event.getEntity().getLastDamageCause() instanceof EntityDamageByEntityEvent) {
-                    EntityDamageByEntityEvent damageEvent = (EntityDamageByEntityEvent) event.getEntity().getLastDamageCause();
+                if (event.getEntity().getLastDamageCause() instanceof EntityDamageByEntityEvent damageEvent) {
                     handleEntityAttack(playerName, damageEvent, event);
                 } else {
                     handleOtherDeaths(playerName, event);
@@ -59,42 +58,47 @@ public class DeathMessageHandler {
         String messageKey = "messages.PLAYER_KILL." + (hasWeapon ? "with_weapon" : "default");
         List<String> messages = plugin.getConfig().getStringList(messageKey);
 
-        String message = getRandomMessage(messages).replace("{player}", playerName).replace("{killer}", killer.getDisplayName());
-        if (hasWeapon) {
-            String weaponKey = weapon.hasItemMeta() && Objects.requireNonNull(weapon.getItemMeta()).hasDisplayName() ? weapon.getItemMeta().getDisplayName() : "item.minecraft." + weapon.getType().getKey().getKey();
-            TranslatableComponent weaponComponent = new TranslatableComponent(weaponKey);
+        String message = getRandomMessage(messages);
+        if (message != null) {
+            message = message.replace("{player}", playerName).replace("{killer}", killer.getDisplayName());
+            if (hasWeapon) {
+                String weaponKey = weapon.hasItemMeta() && Objects.requireNonNull(weapon.getItemMeta()).hasDisplayName() ? weapon.getItemMeta().getDisplayName() : weapon.getTranslationKey();
+                TranslatableComponent weaponComponent = new TranslatableComponent(weaponKey);
 
-            if (weapon.hasItemMeta() && Objects.requireNonNull(weapon.getItemMeta()).hasLore()) {
-                List<String> lore = weapon.getItemMeta().getLore();
-                StringBuilder hoverText = new StringBuilder(weaponKey);
-                if (lore != null) {
-                    for (String line : lore) {
-                        hoverText.append("\n").append(line);
+                if (weapon.hasItemMeta() && Objects.requireNonNull(weapon.getItemMeta()).hasLore()) {
+                    List<String> lore = weapon.getItemMeta().getLore();
+                    StringBuilder hoverText = new StringBuilder(weaponKey);
+                    if (lore != null) {
+                        for (String line : lore) {
+                            hoverText.append("\n").append(line);
+                        }
                     }
+                    weaponComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hoverText.toString())));
                 }
-                weaponComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hoverText.toString())));
+                sendTranslatableMessage(weaponComponent, message, "{weapon}");
+            } else {
+                sendJsonMessage(message);
             }
-
-            sendTranslatableMessage(weaponComponent, message, "{weapon}");
-        } else {
-            sendJsonMessage(message);
         }
     }
 
     private void handleEntityAttack(String playerName, EntityDamageByEntityEvent damageEvent, PlayerDeathEvent deathEvent) {
         Entity damager = damageEvent.getDamager();
         List<String> messages = plugin.getConfig().getStringList("messages.ENTITY_ATTACK.default");
-        if (deathEvent.getDeathMessage() != null && deathEvent.getDeathMessage().contains("§")) {
+        if (deathEvent.getDeathMessage() != null && deathEvent.getDeathMessage().contains("☠")) {
             sendJsonMessage(deathEvent.getDeathMessage());
             return;
         }
-        String message = getRandomMessage(messages).replace("{player}", playerName);
-        if (damager.getCustomName() != null) {
-            message = message.replace("{mob}", damager.getCustomName());
-            sendJsonMessage(message);
-        } else {
-            TranslatableComponent mobComponent = new TranslatableComponent("entity.minecraft." + damager.getType().getKey().getKey());
-            sendTranslatableMessage(mobComponent, message, "{mob}");
+        String message = getRandomMessage(messages);
+        if (message != null) {
+            message = message.replace("{player}", playerName);
+            if (damager.getCustomName() != null) {
+                message = message.replace("{mob}", damager.getCustomName());
+                sendJsonMessage(message);
+            } else {
+                TranslatableComponent mobComponent = new TranslatableComponent("entity.minecraft." + damager.getType().getKey().getKey());
+                sendTranslatableMessage(mobComponent, message, "{mob}");
+            }
         }
     }
 
@@ -102,8 +106,10 @@ public class DeathMessageHandler {
     private void handleOtherDeaths(String playerName, PlayerDeathEvent event) {
         String causeOfDeathKey = event.getEntity().getLastDamageCause() != null ? event.getEntity().getLastDamageCause().getCause().name() : "UNKNOWN";
         List<String> messages = plugin.getConfig().getStringList("messages." + causeOfDeathKey + ".default");
-        String message = getRandomMessage(messages).replace("{player}", playerName);
-        sendJsonMessage(message);
+        String message = getRandomMessage(messages);
+        if (message != null) {
+            sendJsonMessage(message.replace("{player}", playerName));
+        }
     }
 
     private void sendTranslatableMessage(BaseComponent translateComponent, String messageTemplate, String placeholder) {
@@ -119,8 +125,10 @@ public class DeathMessageHandler {
     }
 
     private void sendJsonMessage(String message) {
-        String jsonMessage = ComponentSerializer.toString(new TextComponent(Utils.colorize(message)));
-        redisPublisher.publishToChannel(jsonMessage);
+        if (message != null) {
+            String jsonMessage = ComponentSerializer.toString(new TextComponent(Utils.colorize(message)));
+            redisPublisher.publishToChannel(jsonMessage);
+        }
     }
 
     private void sendJsonMessage(List<BaseComponent> components) {
@@ -129,6 +137,7 @@ public class DeathMessageHandler {
     }
 
     private String getRandomMessage(List<String> messages) {
+        if (messages.isEmpty()) return null;
         return messages.get(new Random().nextInt(messages.size()));
     }
 }
