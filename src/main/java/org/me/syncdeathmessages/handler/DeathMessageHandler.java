@@ -96,7 +96,7 @@ public class DeathMessageHandler {
                 message = message.replace("{mob}", damager.getCustomName());
                 sendJsonMessage(message);
             } else {
-                TranslatableComponent mobComponent = new TranslatableComponent("entity.minecraft." + damager.getType().getKey().getKey());
+                TranslatableComponent mobComponent = new TranslatableComponent(damager.getType().getTranslationKey());
                 sendTranslatableMessage(mobComponent, message, "{mob}");
             }
         }
